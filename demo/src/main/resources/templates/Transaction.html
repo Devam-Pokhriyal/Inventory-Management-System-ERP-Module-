@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Form</title>
+    <link rel="stylesheet" href="/css/Transaction.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Transaction Form</h1>
+        <form id="transactionForm">
+            <div class="form-group">
+                <label for="transactionType">Transaction Type</label>
+                <select id="transactionType" name="transactionType">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="transactionCode">Transaction Code</label>
+                <select id="transactionCode" name="transactionCode">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" id="addButton">Add New</button>
+                <button type="button" id="editButton">Edit</button>
+            </div>
+        </form>
+        
+    </div>
+    <script src="scripts.js"></script>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/api/trn-def/types')  // Update this URL based on your actual endpoint
+            .then(response => response.json())
+            .then(data => {
+                const transactionTypeSelect = document.getElementById('transactionType');
+                const transactionCodeSelect = document.getElementById('transactionCode');
+    
+                // Clear any existing options
+                transactionTypeSelect.innerHTML = '';
+                transactionCodeSelect.innerHTML = '';
+    
+                // Populate transactionType and transactionCode dropdowns
+                data.forEach(trn => {
+                    let optionType = document.createElement('option');
+                    optionType.value = trn.id.trnType;
+                    optionType.text = `${trn.id.trnType} - ${trn.trnDescription}`;
+                    transactionTypeSelect.appendChild(optionType);
+    
+                    let optionCode = document.createElement('option');
+                    optionCode.value = trn.id.trnCode;
+                    optionCode.text = `${trn.id.trnCode} `;
+                    transactionCodeSelect.appendChild(optionCode);
+                });
+            })
+            .catch(error => console.error('Error fetching transaction types:', error));
+    });
+    
+    document.getElementById('addButton').addEventListener('click', function() {
+        const transactionType = document.getElementById('transactionType').value;
+        const transactionCode = document.getElementById('transactionCode').value;
+        
+        // Redirect to TransactionHD page
+        window.location.href = `TransactionHD?type=${transactionType}&code=${transactionCode}`;
+    });
+    
+    document.getElementById('editButton').addEventListener('click', function() {
+        const transactionType = document.getElementById('transactionType').value;
+        const transactionCode = document.getElementById('transactionCode').value;
+        window.location.href = `Edit?type=${transactionType}&code=${transactionCode}`;
+    });
+    
+</script>
+</html>

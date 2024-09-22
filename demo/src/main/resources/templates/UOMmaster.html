@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UOM Master</title>
+    <link rel="stylesheet" href="/css/vommaster.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>UOM Master</h1>
+            <div id="message-container" style="display: none; padding: 10px; color: green;"></div>
+        </header>
+        <main>
+            <div class="actions">
+                <button id="add-new" class="btn">Add New</button>
+                <input type="text" id="search" placeholder="Search...">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Item Code</th>
+                        <th>Item Name</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Unit Price</th>
+                        <th>Supplier Name</th>
+                        <th>Barcode</th>
+                        <th>Quantity</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="item-table-body">
+                    <!-- Example rows -->
+                    <tr>
+                        <td>1</td>
+                        <td>001</td>
+                        <td>Item 1</td>
+                        <td>Description for item 1</td>
+                        <td>Category 1</td>
+                        <td>$10.00</td>
+                        <td>Supplier A</td>
+                        <td>1234567890123</td>
+                        <td>100</td>
+                        <td>
+                            <button class="btn edit">Edit</button>
+                            <button class="btn delete">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </main>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modal-title">Add New Item</h2>
+            <form id="item-form">
+                <input type="hidden" id="item-id">
+                <label for="item-code">Item Code:</label>
+                <input type="text" id="item-code" required>
+                <label for="item-name">Item Name:</label>
+                <input type="text" id="item-name" required>
+                <label for="description">Description:</label>
+                <input type="text" id="description" required>
+                <label for="category">Category:</label>
+                <input type="text" id="category" required>
+                <label for="unit-price">Unit Price:</label>
+                <input type="number" step="0.01" id="unit-price" required>
+                <label for="supplier-name">Supplier Name:</label>
+                <input type="text" id="supplier-name" required>
+                <label for="barcode">Barcode:</label>
+                <input type="text" id="barcode" required>
+                <label for="quantity">Quantity:</label>
+                <input type="number" id="quantity" required>
+                <button id="save" type="submit" class="btn">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addNewButton = document.getElementById('add-new');
+            const modal = document.getElementById('modal');
+            const closeModalButton = document.querySelector('.modal .close');
+            const itemForm = document.getElementById('item-form');
+            const itemTableBody = document.getElementById('item-table-body');
+            let editRow = null;
+
+            // Show modal for adding new item
+            addNewButton.addEventListener('click', function() {
+                resetForm();
+                document.getElementById('modal-title').textContent = 'Add New Item';
+                modal.style.display = 'block';
+            });
+
+            // Show modal for editing item
+            itemTableBody.addEventListener('click', function(event) {
+                if (event.target.classList.contains('edit')) {
+                    const row = event.target.closest('tr');
+                    const cells = row.querySelectorAll('td');
+
+                    document.getElementById('item-id').value = cells[0].textContent; // ID (hidden)
+                    document.getElementById('item-code').value = cells[1].textContent;
+                    document.getElementById('item-name').value = cells[2].textContent;
+                    document.getElementById('description').value = cells[3].textContent;
+                    document.getElementById('category').value = cells[4].textContent;
+                    document.getElementById('unit-price').value = parseFloat(cells[5].textContent.replace('$', '')).toFixed(2);
+                    document.getElementById('supplier-name').value = cells[6].textContent;
+                    document.getElementById('barcode').value = cells[7].textContent;
+                    document.getElementById('quantity').value = cells[8].textContent;
+
+                    editRow = row;
+                    document.getElementById('modal-title').textContent = 'Edit Item';
+                    modal.style.display = 'block';
+                } else if (event.target.classList.contains('delete')) {
+                    const row = event.target.closest('tr');
+                    if (confirm('Are you sure you want to delete this item?')) {
+                        const itemId = row.querySelector('td').textContent; // Assuming ID is in the first cell
+                        fetch(`/items/delete/${itemId}`, {
+                            method: 'DELETE',
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                console.log('Success: Item deleted');
+                                row.remove();
+                            } else {
+                                console.error('Error: Failed to delete item');
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error);
+                        });
+                    }
+                }
+            });
+
+            // Handle form submission
+            document.getElementById("save").addEventListener('click', function(event) {
+                event.preventDefault();
+
+                const id = document.getElementById('item-id').value;
+                const code = document.getElementById('item-code').value.trim();
+                const name = document.getElementById('item-name').value.trim();
+                const description = document.getElementById('description').value;
+                const category = document.getElementById('category').value;
+                const unitPrice = parseFloat(document.getElementById('unit-price').value).toFixed(2);
+                const supplierName = document.getElementById('supplier-name').value;
+                const barcode = document.getElementById('barcode').value;
+                const quantity = document.getElementById('quantity').value;
+
+                const itemData = {
+                    id,
+                    code,
+                    name,
+                    description,
+                    category,
+                    unitPrice,
+                    supplierName,
+                    barcode,
+                    quantity
+                };
+
+                if (editRow) {
+                    // Update existing row
+                    const cells = editRow.querySelectorAll('td');
+                    cells[1].textContent = code;
+                    cells[2].textContent = name;
+                    cells[3].textContent = description;
+                    cells[4].textContent = category;
+                    cells[5].textContent = `$${unitPrice}`;
+                    cells[6].textContent = supplierName;
+                    cells[7].textContent = barcode;
+                    cells[8].textContent = quantity;
+
+                    // Update in database
+                    fetch('/items/update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(itemData),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Success:', data);
+                        closeModal();
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+
+                    editRow = null;
+                } else {
+                    // Add new row
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td>${Date.now()}</td>
+                        <td>${code}</td>
+                        <td>${name}</td>
+                        <td>${description}</td>
+                        <td>${category}</td>
+                        <td>$${unitPrice}</td>
+                        <td>${supplierName}</td>
+                        <td>${barcode}</td>
+                        <td>${quantity}</td>
+                        <td>
+                            <button class="btn edit">Edit</button>
+                            <button class="btn delete">Delete</button>
+                        </td>
+                    `;
+                    itemTableBody.appendChild(newRow);
+
+                    // Add to database
+                    fetch('/items/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(itemData),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Success:', data);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+
+                closeModal();
+            });
+
+            // Close modal
+            closeModalButton.addEventListener('click', closeModal);
+            window.addEventListener('click', function(event) {
+                if (event.target == modal) {
+                    closeModal();
+                }
+            });
+
+            function resetForm() {
+                document.getElementById('item-form').reset();
+                document.getElementById('item-id').value = '';
+            }
+
+            function closeModal() {
+                modal.style.display = 'none';
+                resetForm();
+            }
+        });
+        document.getElementById('vendorCode').addEventListener('change', async function () {
+            const vendorCode = this.value;
+            if (vendorCode) {
+                await fetchItemCode(vendorCode);
+            }
+        });
+        
+        async function fetchItemCode(vendorCode) {
+            try {
+                const response = await fetch(`/api/vendor-item-mapping/${vendorCode}`);
+                if (response.ok) {
+                    const itemCodes = await response.json();
+                    populateItemCodeDropdown(itemCodes);
+                } else {
+                    console.error('Error fetching item codes:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error fetching item codes:', error);
+            }
+        }
+        
+        function populateItemCodeDropdown(itemCodes) {
+            const itemCodeInput = document.getElementById('itemCode');
+            itemCodeInput.value = itemCodes.length > 0 ? itemCodes[0] : ''; // Populate the first item code if available
+        }
+        
+    </script>
+</body>
+</html>

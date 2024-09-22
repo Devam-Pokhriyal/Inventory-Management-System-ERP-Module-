@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Master Management</title>
+    <link rel="stylesheet" href="/css/SubCategory.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Vendor Master </h1>
+
+        <!-- Form to add or update vendor -->
+        <form id="vendor-form">
+            <input type="hidden" id="vendor-id" name="vendorId">
+            <label for="vendor-code">Code:</label>
+            <input type="text" id="vendor-code" name="vendorCode" required>
+            <label for="vendor-name">Name:</label>
+            <input type="text" id="vendor-name" name="vendorName" required>
+            <label for="vendor-description">Description:</label>
+            <input type="text" id="vendor-description" name="vendorDescription" required>
+            <button type="submit">Save</button>
+        </form>
+
+        <!-- Table to display vendors -->
+        <table id="vendor-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Table rows will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    <script>
+        const apiUrl = 'http://localhost:8080/api/vendor-master';
+
+        // Fetch all vendors and display them
+        function fetchVendors() {
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.querySelector('#vendor-table tbody');
+                    tableBody.innerHTML = ''; // Clear existing rows
+                    data.forEach(vendor => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${vendor.code}</td>
+                            <td>${vendor.name}</td>
+                            <td>${vendor.description}</td>
+                            <td>
+                                <button class="action-btn" onclick="editVendor('${vendor.code}')">Edit</button>
+                                <button class="action-btn" onclick="deleteVendor('${vendor.code}')">Delete</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error fetching vendors:', error));
+        }
+
+        // Add or update vendor
+        document.getElementById('vendor-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const code = document.getElementById('vendor-code').value;
+            const name = document.getElementById('vendor-name').value;
+            const description = document.getElementById('vendor-description').value;
+            const id = document.getElementById('vendor-id').value;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${apiUrl}/${code}` : apiUrl;
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code, name, description })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(() => {
+                fetchVendors(); // Refresh the table
+                document.getElementById('vendor-form').reset(); // Reset form
+                document.getElementById('vendor-id').value = ''; // Clear hidden field
+            })
+            .catch(error => console.error('Error saving vendor:', error));
+        });
+
+        // Populate form for editing
+        function editVendor(code) {
+            fetch(`${apiUrl}/${code}`)
+                .then(response => response.json())
+                .then(vendor => {
+                    document.getElementById('vendor-id').value = code;
+                    document.getElementById('vendor-code').value = vendor.code;
+                    document.getElementById('vendor-name').value = vendor.name;
+                    document.getElementById('vendor-description').value = vendor.description;
+                })
+                .catch(error => console.error('Error fetching vendor for editing:', error));
+        }
+
+        // Delete vendor
+        function deleteVendor(code) {
+            fetch(`${apiUrl}/${code}`, {
+                method: 'DELETE'
+            })
+            .then(() => fetchVendors()) // Refresh the table
+            .catch(error => console.error('Error deleting vendor:', error));
+        }
+
+        // Initial fetch
+        fetchVendors();
+    </script>
+</body>
+</html>

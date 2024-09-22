@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item UOM Conversion</title>
+    <link rel="stylesheet" href="/css/Conversion.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Item UOM Conversion</h1>
+        <form id="uomForm">
+            <label for="itemCode">Item Code:</label>
+            <select id="itemCode" name="itemCode" required>
+                <option value="" disabled selected>Select Item Code</option>
+                <!-- Options will be populated dynamically -->
+            </select>
+
+            <label for="fromUom">From UOM:</label>
+            <input type="text" id="fromUom" name="fromUom" required readonly>
+
+            <label for="toUom">To UOM:</label>
+            <select name="toUom" id="toUom" required>
+                <option value="Grams">Grams</option>
+                <option value="Centimeter">Centimeter</option>
+                <option value="ML">ML</option>
+                <option value="Items">Items</option>
+            </select>
+
+            <label for="cf">Conversion Factor:</label>
+            <select id="cf" name="cf" required>
+                <option value="*">*</option>
+                <option value="/">/</option>
+                <option value="+">+</option>
+                <option value="-">-</option>
+            </select>
+
+            <label for="uomValue">UOM Value:</label>
+            <input type="number" id="uomValue" name="uomValue" required>
+
+            <label for="rcf">Reverse Conversion Factor:</label>
+            <input type="text" id="rcf" name="rcf" readonly>
+
+            <button type="submit">Submit</button>
+        </form>
+
+        <h2>Existing Conversions</h2>
+        <table id="conversionTable">
+            <thead>
+                <tr>
+                    <th>From UOM</th>
+                    <th>Item Code</th>
+                    <th>To UOM</th>
+                    <th>CF</th>
+                    <th>UOM Value</th>
+                    <th>RCF</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dynamic rows will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('uomForm');
+            const itemCodeSelect = document.getElementById('itemCode');
+            const fromUomInput = document.getElementById('fromUom');
+            const toUomSelect = document.getElementById('toUom');
+            const conversionTable = document.getElementById('conversionTable').getElementsByTagName('tbody')[0];
+        
+            // Fetch all items from the backend to populate the dropdown
+            fetch('/api/item-master/all')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch items');
+                    }
+                    return response.json();
+                })
+                .then(items => {
+                    itemCodeSelect.innerHTML = '<option value="" disabled selected>Select Item Code</option>'; // Clear previous options
+                    items.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.itemCode;
+                        option.textContent = item.itemName ? `${item.itemCode} - ${item.itemName}` : item.itemCode;
+                        itemCodeSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching items:', error);
+                });
+        
+            itemCodeSelect.addEventListener('change', handleItemCodeChange);
+            form.addEventListener('submit', handleFormSubmit);
+        
+            // Fetch existing UOM conversions on page load
+            fetch('/api/item-uom-master')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch UOM conversions');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Clear existing rows if needed
+                    conversionTable.innerHTML = '';
+
+                    // Populate the table with existing records
+                    data.forEach(itemUOMaster => {
+                        const newRow = conversionTable.insertRow();
+                        newRow.innerHTML = `
+                            <td>${itemUOMaster.id.fromUom || 'N/A'}</td>
+                            <td>${itemUOMaster.id.itemCode || 'N/A'}</td>
+                            <td>${itemUOMaster.id.toUom || 'N/A'}</td>
+                            <td>${itemUOMaster.cf || 'N/A'}</td>
+                            <td>${itemUOMaster.uomValue || 'N/A'}</td>
+                            <td>${itemUOMaster.rcf || 'N/A'}</td>
+                            <td class="actions">
+                                <button class="edit">Edit</button>
+                                <button class="delete">Delete</button>
+                            </td>
+                        `;
+                        // Attach event listeners to edit and delete buttons
+                        attachRowActions(newRow);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching UOM conversions:', error);
+                });
+        
+            function handleItemCodeChange(event) {
+                const itemCode = event.target.value;
+        
+                // Fetch the UOM from the backend based on selected itemCode
+                fetch(`/api/item-master/${itemCode}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch UOM');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        fromUomInput.value = data.unitOfMeasure || '';  // Set the UOM value or empty if undefined
+                    })
+                    .catch(error => {
+                        alert('Error fetching UOM: ' + error.message);
+                        fromUomInput.value = ''; // Clear the input if item code is invalid
+                    });
+            }
+        
+            function handleFormSubmit(event) {
+                event.preventDefault();
+        
+                const fromUom = fromUomInput.value;
+                const itemCode = form.itemCode.value;
+                const toUom = form.toUom.value;
+                const cf = form.cf.value;
+                const uomValue = parseFloat(form.uomValue.value);
+                const rcf = calculateRcf(cf);
+        
+                // Prepare data to be sent to the backend
+                const data = {
+                    id: { 
+                        fromUom: fromUom,
+                        itemCode: itemCode,
+                        toUom: toUom 
+                    },
+                    cf: cf,
+                    uomValue: uomValue,
+                    rcf: rcf
+                };
+        
+                // Send the data to the backend
+                fetch('/api/item-uom-master', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to save data');
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    console.log('Success:', result);
+        
+                    // Add the data to the table
+                    const newRow = conversionTable.insertRow();
+                    newRow.innerHTML = `
+                        <td>${fromUom || 'N/A'}</td>
+                        <td>${itemCode || 'N/A'}</td>
+                        <td>${toUom || 'N/A'}</td>
+                        <td>${cf || 'N/A'}</td>
+                        <td>${uomValue || 'N/A'}</td>
+                        <td>${rcf || 'N/A'}</td>
+                        <td class="actions">
+                            <button class="edit">Edit</button>
+                            <button class="delete">Delete</button>
+                        </td>
+                    `;
+        
+                    form.reset(); // Clear the form
+                    fromUomInput.value = ''; // Clear fromUom input
+        
+                    // Attach event listeners to edit and delete buttons
+                    attachRowActions(newRow);
+                })
+                .catch(error => {
+                    alert('Error submitting form: ' + error.message);
+                });
+            }
+        
+            function calculateRcf(cf) {
+                switch(cf) {
+                    case '*':
+                        return '/';
+                    case '/':
+                        return '*';
+                    case '+':
+                        return '-';
+                    case '-':
+                        return '+';
+                    default:
+                        return 'Invalid CF';
+                }
+            }
+        
+            function attachRowActions(row) {
+                const editButton = row.querySelector('.edit');
+                const deleteButton = row.querySelector('.delete');
+        
+                editButton.addEventListener('click', handleEdit);
+                deleteButton.addEventListener('click', handleDelete);
+            }
+        
+            function handleEdit(event) {
+                const row = event.target.closest('tr');
+                const cells = row.children;
+        
+                form.itemCode.value = cells[1].innerText;
+                fromUomInput.value = cells[0].innerText;
+                form.toUom.value = cells[2].innerText;
+                form.cf.value = cells[3].innerText;
+                form.uomValue.value = cells[4].innerText;
+        
+                // Remove the row to allow re-submission
+                row.remove();
+            }
+        
+            function handleDelete(event) {
+                const row = event.target.closest('tr');
+                const cells = row.children;
+            
+                // Get the cell values needed to identify the record
+                const fromUom = cells[0].innerText;
+                const itemCode = cells[1].innerText;
+                const toUom = cells[2].innerText;
+            
+                // Create the payload for deletion
+                const data = {
+                    id: {
+                        fromUom: fromUom,
+                        itemCode: itemCode,
+                        toUom: toUom
+                    }
+                };
+            
+                fetch('/api/item-uom-master', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to delete the record');
+                    }
+                    return response.text(); // Expecting no content response
+                })
+                .then(() => {
+                    console.log('Record deleted successfully');
+                    row.remove(); // Remove the row from the table
+                })
+                .catch(error => {
+                    console.error('Error deleting record:', error);
+                    alert('Failed to delete the record');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    display: flex;
+    margin: 0;
+    overflow: hidden; /* Prevent scrolling on the body */
+    
+}
+
+.sidebar {
+    width: 250px;
+    position: fixed; /* Fix sidebar in place */
+    top: 0;
+    bottom: 0;
+    background-color: #1d1755;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar h2 {
+    color: white;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+    flex: 1; /* Take remaining space */
+}
+
+.sidebar ul li {
+    padding: 10px;
+    cursor: pointer;
+}
+
+.sidebar ul li.active {
+    background-color: #444;
+}
+
+.sidebar ul li ion-icon {
+    margin-right: 10px;
+}
+
+.sidebar .footer {
+    margin-top: auto; /* Push footer to bottom */
+    background: #2c3e50;
+    color: #ecf0f1;
+    text-align: center;
+    padding: 14px;
+}
+
+.sidebar .footer p {
+    margin: 5px 0;
+}
+
+.main-content {
+    margin-left: 299px; /* Space for the sidebar */
+    background-color: #f4f4f4;
+    flex-grow: 1;
+    overflow-y: auto; /* Allow vertical scrolling */
+ 
+   
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+header .search-bar {
+    display: flex;
+    align-items: center;
+}
+
+header .search-bar ion-icon {
+    margin-right: 10px;
+}
+
+header .search-bar input {
+    padding: 5px;
+}
+
+header .user-info ion-icon {
+    margin-left: 20px;
+}
+
+.content {
+    padding: 20px;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    background-color: white;
+    padding: 20px;
+    text-align: center;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.details {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.details .product-details, .details .top-selling {
+    background-color: white;
+    padding: 20px;
+    width: 48%;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.orders {
+    display: flex;
+    justify-content: space-between;
+}
+
+.orders .purchase-order, .orders .sales-order {
+    background-color: white;
+    padding: 20px;
+    width: 48%;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dropdown-content {
+    display: none;
+    background-color: #444;
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+.dropdown-content a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    padding: 10px 20px;
+}
+
+.dropdown-content a:hover {
+    background-color: #555;
+}
+
+.dropdown.active .dropdown-content {
+    display: block;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #29105c;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-subcontent {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background-color: #391818;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown-submenu:hover .dropdown-subcontent {
+    display: block;
+}
+
+        #myPieChart {
+            width: 50%;
+            margin: auto;
+        }
+        /* Adjust height here */
+        canvas {
+            height: 200px; /* Set desired height */
+        }
+    .username-section{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        font-weight: bold;
+    }
+    .stat-item a{
+        color: #391818;
+        text-decoration: none;
+        list-style-type: none;
+    }
+    .stat-item a :hover{
+         transform: scale(2);
+        
+    }
+    /* The Modal (background) */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
+}
+
+/* Modal Content */
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Close Button */
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover, .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}

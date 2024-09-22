@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventory Dashboard</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Inventory</h2>
+        <ul>
+            <li class="active"><ion-icon name="grid-outline"></ion-icon> Dashboard</li>
+            <li class="dropdown">
+                <ion-icon name="layers-outline"></ion-icon> Master
+                <ion-icon name="chevron-down-outline" class="dropdown-icon"></ion-icon>
+                <ul class="dropdown-content">
+                    <a href="/dashboard/CategoryMaster"> <li>Category Master</li></a>
+                    <a href="/dashboard/SubCategoryMaster"> <li>SubCategory Master</li></a>
+                    <a href="/dashboard/VendorMaster"> <li>Vendor Master</li></a>
+                    <a href="/dashboard/Vendor-item-Mapping-Master"> <li>Mapping Master</li></a>
+                    <a href="/dashboard/Item-UOM-Conversion"> <li>Conversion Master</li></a>
+                    <a href="/dashboard/Location-Master"> <li>Location Master</li></a>
+             
+                   <a href="/dashboard/Item-Master"> <li>Item Master</li></a>
+                   
+                  
+                </ul>
+            </li>
+            
+        
+           <li class="dropdown">
+  <ion-icon name="swap-horizontal-outline"></ion-icon> Inventory
+  <ion-icon name="chevron-down-outline" class="dropdown-icon"></ion-icon>
+  <ul class="dropdown-content">
+    <a href="/dashboard/Transaction"> <li>Transactions</li></a>
+  </ul>
+</li>
+            <li class="dropdown">
+                <ion-icon name="bar-chart-outline"></ion-icon> Reports
+                <ion-icon name="chevron-down-outline" class="dropdown-icon"></ion-icon>
+                <ul class="dropdown-content">
+                    
+                    <a href=""> <li>Stock Availiability Report</li></a>
+                </ul>
+            </li>
+            <li class="dropdown">
+                <ion-icon name="document-outline"></ion-icon> Settings
+                <ion-icon name="chevron-down-outline" class="dropdown-icon"></ion-icon>
+                <ul class="dropdown-content">
+                    <a href="/dashboard/Change-Password"> <li id="changePassword">Change Password</li></a>
+                    
+                    <a href="/logout"> <li id="logout-btn">Log-Out </li></a>
+                </ul>
+            </li>
+        </ul>
+        <div class="footer">
+        <footer>
+            <p>&copy;  All rights reserved.</p>
+            Phone: +1 (800) 123-4567
+            <p>Contact: support@inventorysystem.com</p>
+        </footer>
+    </div>
+    </div>
+    <div class="main-content">
+        <header>
+            <div class="username-section">
+                <p> ADMIN : <span id="username" class="username"></span></p>
+            </div>
+
+        </header>   
+        <div class="content">
+            <div class="stats">
+                <div class="stat-item">
+               <a href="" id="showVendorsBtn">   <i class="fas fa-store"></i> <br> Total vendors</a>
+                </div>
+                <div class="stat-item">
+                    <a href="" id="showVendorsBtn2">   <i class="fas fa-folder"></i> <br> Total Categories</a>
+                </div>
+                <div class="stat-item">
+                  <i class="fas fa-box"></i> <br> Total Product
+                </div>
+                <div class="stat-item">
+                  <i class="fas fa-money-bill-wave"></i> <br> Total Sales
+                </div>
+              </div>
+            <div class="details">
+                <div class="product-details">
+                    <canvas id="myChart" style="width:100%;max-width:600px"></canvas>
+                </div>
+                <div class="top-selling">
+                   <canvas id="myPieChart" width="200" height="200"></canvas>
+                    
+                </div>
+            </div>
+            <!-- Modal Structure -->
+<div id="vendorModal" class="modal">
+    <div class="modal-content">
+        <span id="closeModalBtn" class="close">&times;</span>
+        <h2>Vendors List</h2>
+        <ul id="vendorList">
+            <!-- Vendor names will be populated here -->
+        </ul>
+    </div>
+</div>
+<!-- Modal Structure -->
+<div id="vendorModal2" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span id="closeModalBtn2" class="close">&times;</span>
+        <h2>Category List</h2>
+        <ul id="CategoryList">
+            <!-- Category names will be populated here -->
+        </ul>
+    </div>
+</div>
+
+
+            <div class="orders">
+                <div class="purchase-order">
+                    <canvas id="myMultilineChart" style="width:100%;max-width:800px"></canvas>
+                </div>
+                <div class="sales-order">
+                    
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+</body>
+<script>
+    // Example: Storing username in session storage
+sessionStorage.setItem('username', 'Devam');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Retrieve the username from session storage
+        const username = sessionStorage.getItem('username') || 'Guest';
+        
+        // Update the HTML to show the username
+        document.getElementById('username').textContent = username;
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdowns = document.querySelectorAll('.dropdown');
+    
+        dropdowns.forEach(dropdown => {
+            dropdown.addEventListener('click', function(event) {
+                event.stopPropagation();
+                this.classList.toggle('active');
+                let content = this.querySelector('.dropdown-content');
+                if (content.style.display === 'block') {
+                    content.style.display = 'none';
+                } else {
+                    content.style.display = 'block';
+                }
+            });
+        });
+    
+        document.addEventListener('click', function() {
+            dropdowns.forEach(dropdown => {
+                let content = dropdown.querySelector('.dropdown-content');
+                if (content && dropdown.classList.contains('active')) {
+                    content.style.display = 'none';
+                    dropdown.classList.remove('active');
+                }
+            });
+        });
+    });
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['January', 'February', 'March', 'April', 'May'],
+            datasets: [{
+                label: 'My Dataset',
+                data: [10, 20, 30, 40, 50],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the canvas element
+        const ctx = document.getElementById('myPieChart').getContext('2d');
+
+        // Create a new Chart instance
+        const myPieChart = new Chart(ctx, {
+            type: 'pie', // Specify the type of chart
+            data: {
+                labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'], // Labels for the chart segments
+                datasets: [{
+                    label: 'My Pie Chart', // Label for the dataset
+                    data: [12, 19, 3, 5, 2, 3], // Data values
+                    backgroundColor: [ // Background colors for each segment
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [ // Border colors for each segment
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1 // Width of the border
+                }]
+            },
+            options: {
+                responsive: true, // Make the chart responsive
+                plugins: {
+                    legend: {
+                        position: 'top', // Position of the legend
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+    const labels = ["January", "February", "March", "April", "May", "June", "July"];
+
+new Chart("myMultilineChart", {
+  type: "line",
+  data: {
+    labels: labels,
+    datasets: [{
+      label: "Dataset 1",
+      data: [30, 50, 70, 90, 110, 130, 150],
+      borderColor: "rgba(75, 192, 192, 1)",
+      
+      backgroundColor: "rgba(75, 192, 192, 0.2)",
+      fill: true
+    }, {
+      label: "Dataset 2",
+      data: [20, 40, 60, 80, 100, 120, 140],
+      borderColor: "rgba(255, 99, 132, 1)",
+      backgroundColor: "rgba(255, 99, 132, 0.2)",
+      fill: false
+    }, {
+      label: "Dataset 3",
+      data: [10, 30, 50, 70, 90, 110, 130],
+      borderColor: "rgba(153, 102, 255, 1)",
+      backgroundColor: "rgba(153, 102, 255, 0.2)",
+      fill: false
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      x: {
+        beginAtZero: true
+      },
+      y: {
+        beginAtZero: true
+      }
+    },
+    plugins: {
+      legend: {
+        display: true
+      },
+      tooltip: {
+        callbacks: {
+          label: function(tooltipItem) {
+            return tooltipItem.dataset.label + ': ' + tooltipItem.raw;
+          }
+        }
+      }
+    }
+  }
+});
+document.getElementById('logout-btn').addEventListener('click', () => {
+    // Clear session storage
+    sessionStorage.clear();
+
+    // Redirect to the login page
+    window.location.href = '/login';
+
+    // Prevent back navigation to the previous page after logout
+    window.history.pushState(null, null, '/login');
+    window.onpopstate = function () {
+      window.history.go(1);
+    };
+  });
+  
+
+
+
+
+
+
+
+
+  document.getElementById('showVendorsBtn').addEventListener('click', function(event) {
+    event.preventDefault(); // Prevent the default link behavior
+    fetchVendors();
+});
+
+document.getElementById('closeModalBtn').addEventListener('click', function() {
+    document.getElementById('vendorModal').style.display = 'none';
+});
+
+// Fetch vendors from the backend and populate the modal
+async function fetchVendors() {
+    try {
+        const response = await fetch('/api/vendor-master'); // Update with your API endpoint
+        const vendors = await response.json();
+        
+        const vendorList = document.getElementById('vendorList');
+        vendorList.innerHTML = ''; // Clear previous content
+
+        vendors.forEach(vendor => {
+            const listItem = document.createElement('li');
+            listItem.textContent = vendor.name; // Assuming the vendor object has a `name` property
+            vendorList.appendChild(listItem);
+        });
+
+        // Show the modal after data is fetched
+        document.getElementById('vendorModal').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error fetching vendors:', error);
+    }
+}
+
+// Close the modal if the user clicks anywhere outside the modal content
+window.onclick = function(event) {
+    const modal = document.getElementById('vendorModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+};
+
+
+
+
+
+document.getElementById('showVendorsBtn2').addEventListener('click', function(event) {
+    event.preventDefault(); // Prevent the default link behavior
+    fetchCategories(); // Fetch categories
+});
+
+document.getElementById('closeModalBtn2').addEventListener('click', function() {
+    document.getElementById('vendorModal2').style.display = 'none';
+});
+
+// Fetch categories from the backend and populate the modal
+async function fetchCategories() {
+    try {
+        const response = await fetch('/api/category-master'); // Replace with your correct API endpoint
+        const categories = await response.json();
+        
+        const categoryList = document.getElementById('CategoryList');
+        categoryList.innerHTML = ''; // Clear previous content
+
+        categories.forEach(category => { // Loop through fetched categories
+            const listItem = document.createElement('li');
+            listItem.textContent = category.name; // Assuming the category object has a 'name' property
+            categoryList.appendChild(listItem); // Append to the list
+        });
+
+        // Show the modal after the data is fetched
+        document.getElementById('vendorModal2').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error fetching categories:', error);
+    }
+}
+
+// Close the modal if the user clicks anywhere outside the modal content
+window.onclick = function(event) {
+    const modal = document.getElementById('vendorModal2');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+};
+
+
+    </script>
+
+</html>

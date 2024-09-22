@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sub Category Master Management</title>
+    <link rel="stylesheet" href="/css/SubCategory.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Sub Category Master </h1>
+
+        <!-- Form to add or update sub-category -->
+        <form id="sub-category-form">
+            <input type="hidden" id="sub-category-id" name="subCategoryId">
+
+            <!-- Dropdown for Category Name -->
+            <label for="category-name">Category Name:</label>
+            <select id="category-name" name="categoryName" required>
+                <!-- Options will be populated here -->
+            </select>
+
+            <label for="sub-category-name">Sub Category Name:</label>
+            <input type="text" id="sub-category-name" name="subCategoryName" required>
+
+            <label for="sub-category-description">Description:</label>
+            <input type="text" id="sub-category-description" name="subCategoryDescription" required>
+
+            <button type="submit">Save</button>
+        </form>
+
+        <!-- Table to display sub-categories -->
+        <table id="sub-category-table">
+            <thead>
+                <tr>
+                    <th>Category Name</th>
+                    <th>Sub Category Name</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Table rows will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    <script src="subCategoryMaster.js"></script>
+</body>
+<script>
+    const apiUrl = 'http://localhost:8080/api/sub-category-master';
+const categoryApiUrl = 'http://localhost:8080/api/category-master';
+
+// Fetch all sub-categories and display them
+function fetchSubCategories() {
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.querySelector('#sub-category-table tbody');
+            tableBody.innerHTML = ''; // Clear existing rows
+            data.forEach(subCategory => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${subCategory.id.categoryName}</td>
+                    <td>${subCategory.id.name}</td>
+                    <td>${subCategory.description}</td>
+                    <td>
+                        <button class="action-btn" onclick="editSubCategory('${subCategory.id.categoryName}', '${subCategory.id.name}')">Edit</button>
+                        <button class="action-btn" onclick="deleteSubCategory('${subCategory.id.categoryName}', '${subCategory.id.name}')">Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        })
+        .catch(error => console.error('Error fetching sub-categories:', error));
+}
+
+// Fetch all categories and populate the dropdown
+function fetchCategories() {
+    fetch(categoryApiUrl)
+        .then(response => response.json())
+        .then(data => {
+            const categorySelect = document.getElementById('category-name');
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
+            data.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.name;
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error fetching categories:', error));
+}
+
+// Add or update sub-category
+document.getElementById('sub-category-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    
+    const categoryName = document.getElementById('category-name').value;
+    const name = document.getElementById('sub-category-name').value;
+    const description = document.getElementById('sub-category-description').value;
+    const idValue = document.getElementById('sub-category-id').value;
+    
+    const method = idValue ? 'PUT' : 'POST';
+    const url = idValue ? `${apiUrl}/${idValue.split('/')[0]}/${idValue.split('/')[1]}` : apiUrl;
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            id: { 
+                categoryName, 
+                name 
+            }, 
+            description 
+        })
+    })
+    .then(response => response.json())
+    .then(() => {
+        fetchSubCategories(); // Refresh the table
+        document.getElementById('sub-category-form').reset(); // Reset form
+        document.getElementById('sub-category-id').value = ''; // Clear hidden field
+    })
+    .catch(error => console.error('Error saving sub-category:', error));
+});
+
+// Populate form for editing
+function editSubCategory(categoryName, name) {
+    fetch(`${apiUrl}/${categoryName}/${name}`)
+        .then(response => response.json())
+        .then(subCategory => {
+            // Populate the form fields
+            document.getElementById('sub-category-id').value = `${categoryName}/${name}`;
+            document.getElementById('category-name').value = subCategory.id.categoryName;
+            document.getElementById('sub-category-name').value = subCategory.id.name;
+            document.getElementById('sub-category-description').value = subCategory.description;
+        })
+        .catch(error => console.error('Error fetching sub-category for editing:', error));
+}
+
+// Delete sub-category
+function deleteSubCategory(categoryName, name) {
+    fetch(`${apiUrl}/${categoryName}/${name}`, {
+        method: 'DELETE'
+    })
+    .then(() => fetchSubCategories()) // Refresh the table
+    .catch(error => console.error('Error deleting sub-category:', error));
+}
+
+// Initial fetch
+fetchCategories(); // Load category options
+fetchSubCategories(); // Load sub-categories
+
+</script>
+</html>

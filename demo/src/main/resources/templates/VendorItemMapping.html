@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Item Mapping Management</title>
+    <link rel="stylesheet" href="/css/vendorItemMapping.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Vendor Item Mapping </h1>
+
+        <!-- Form to select vendor and item description -->
+        <form id="vendor-item-mapping-form">
+            <label for="vendor-code">Vendor Code:</label>
+            <select id="vendor-code" name="vendorCode" required>
+                <!-- Vendor options will be populated here -->
+            </select>
+
+            <label for="item-description">Item Description:</label>
+            <select id="item-description" name="itemDescription" required>
+                <!-- Item descriptions will be populated here -->
+            </select>
+
+            <button type="submit">Map Items</button>
+        </form>
+
+        <!-- Table to display vendor item mappings -->
+        <table id="vendor-item-mapping-table">
+            <thead>
+                <tr>
+                    <th>Vendor Code</th>
+                    <th>Item Codes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Table rows will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    <script src=""></script>
+</body>
+<script>
+    const vendorMasterApiUrl = 'http://localhost:8080/api/vendor-master';
+const itemMasterApiUrl = 'http://localhost:8080/api/item-master';
+
+
+function fetchVendorsAndItems() {
+    Promise.all([
+        fetch(vendorMasterApiUrl).then(response => response.json()),
+        fetch(itemMasterApiUrl).then(response => response.json())
+    ])
+    .then(([vendors, items]) => {
+        populateVendorDropdown(vendors);
+        populateItemDescriptionDropdown(items);
+    })
+    .catch(error => console.error('Error fetching vendor and item data:', error));
+}
+
+function populateVendorDropdown(vendors) {
+    const vendorSelect = document.getElementById('vendor-code');
+    vendors.forEach(vendor => {
+        const option = document.createElement('option');
+        option.value = vendor.code;
+        option.textContent = vendor.name;
+        vendorSelect.appendChild(option);
+    });
+}
+
+function populateItemDescriptionDropdown(items) {
+    const itemDescriptionSelect = document.getElementById('item-description');
+    const descriptions = Array.from(new Set(items.map(item => item.itemDescription)));
+    descriptions.forEach(description => {
+        const option = document.createElement('option');
+        option.value = description;
+        option.textContent = description;
+        itemDescriptionSelect.appendChild(option);
+    });
+}
+
+document.getElementById('vendor-item-mapping-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const vendorCode = document.getElementById('vendor-code').value;
+    const itemDescription = document.getElementById('item-description').value;
+    
+    fetchVendorItemMappings(vendorCode, itemDescription)
+        .then(itemCodes => {
+            storeVendorItemMapping(vendorCode, itemCodes)
+                .then(() => {
+                    displayVendorItemMappings();  // Fetch and display all mappings after storing
+                });
+        })
+        .catch(error => console.error('Error processing the mapping:', error));
+});
+
+function fetchVendorItemMappings(vendorCode, itemDescription) {
+    return fetch(itemMasterApiUrl)
+        .then(response => response.json())
+        .then(items => {
+            return items
+                .filter(item => item.itemDescription === itemDescription)
+                .map(item => item.itemCode);
+        })
+        .catch(error => {
+            console.error('Error fetching item mappings:', error);
+            throw error;
+        });
+}
+
+function storeVendorItemMapping(vendorCode, itemCodes) {
+    const promises = itemCodes.map(itemCode => {
+        const mapping = {
+            id: { code: vendorCode, itemCode: itemCode },
+            vendorCode: vendorCode,
+            itemCode: itemCode
+        };
+
+        return fetch(vendorItemMappingApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(mapping)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to store the mapping in the database.');
+            }
+            return response.json();
+        });
+    });
+
+    return Promise.all(promises)
+        .then(data => {
+            console.log('All mappings stored successfully:', data);
+        })
+        .catch(error => {
+            console.error('Error storing vendor-item mapping:', error);
+        });
+}
+
+const vendorItemMappingApiUrl = 'http://localhost:8080/api/vendor-item-mapping';
+
+function displayVendorItemMappings() {
+    fetch(vendorItemMappingApiUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch vendor-item mappings.');
+            }
+            return response.json();
+        })
+        .then(mappings => {
+            console.log('Mappings fetched from API:', mappings); // Debug log to check the fetched data
+
+            const tableBody = document.querySelector('#vendor-item-mapping-table tbody');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            mappings.forEach(mapping => {
+                console.log('Processing mapping:', mapping); // Debug log for each mapping
+
+                // Access vendorCode and itemCode from the mapping.id
+                const vendorCode = mapping.id?.code || 'N/A';
+                const itemCode = mapping.id?.itemCode || 'N/A';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${vendorCode}</td> 
+                    <td>${itemCode}</td>  
+                `;
+                tableBody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching vendor-item mappings:', error);
+        });
+}
+
+
+// Initial fetch to display mappings on page load
+displayVendorItemMappings();
+
+// Initial fetch
+fetchVendorsAndItems();
+
+
+    
+
+</script>
+</html>

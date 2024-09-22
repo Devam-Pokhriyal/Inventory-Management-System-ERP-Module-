@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Master</title>
+    <link rel="stylesheet" href="/css/ItemMaster.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Item Master </h1>
+
+        <form id="item-form">
+            <input type="hidden" id="item-code-hidden" name="itemCodeHidden">
+            
+            <label for="item-code">Item Code:</label>
+            <input type="text" id="item-code" name="itemCode" required>
+
+            <label for="category-name">Category Name:</label>
+            <select id="category-name" name="categoryName" required>
+                <option value="">Select Category</option>
+            </select>
+
+            <label for="sub-category">Sub Category:</label>
+            <select id="sub-category" name="subCategory" required>
+                <option value="">Select Sub Category</option>
+            </select>
+
+            <label for="item-description">Item Description:</label>
+            <input type="text" id="item-description" name="itemDescription" required>
+
+            <label for="unit-of-measure">Unit of Measure:</label>
+            <select name="unitOfMeasure" id="unit-of-measure" required>
+                <option value="Kilograms">Kilograms</option>
+                <option value="Meters">Meters</option>
+                <option value="Litres">Litres</option>
+                <option value="Box">Box</option>
+            </select>
+
+            <label for="unit-price">Unit Price:</label>
+            <input type="number" id="unit-price" name="unitPrice" step="0.01" required>
+
+            <label for="cost-price">Cost Price:</label>
+            <input type="number" id="cost-price" name="costPrice" step="0.01" required>
+
+            <label for="hsn-code">HSN Code:</label>
+            <input type="text" id="hsn-code" name="hsnCode">
+
+            <label for="number-of-items">Feedback:</label>
+            <input type="text" id="number-of-items" name="numberOfItems" required>
+
+            <button id="save" type="submit">Save</button>
+        </form>
+
+        <table id="item-table">
+            <thead>
+                <tr>
+                    <th>Item Code</th>
+                    <th>Category Name</th>
+                    <th>Sub Category</th>
+                    <th>Item Description</th>
+                    <th>Unit of Measure</th>
+                    <th>Unit Price</th>
+                    <th>Cost Price</th>
+                    <th>HSN Code</th>
+                    <th>Feedback</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:8080/api/item-master';
+        const categoryApiUrl = 'http://localhost:8080/api/category-master';
+        const subCategoryApiUrl = 'http://localhost:8080/api/sub-category-master';
+
+        function fetchItems() {
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.querySelector('#item-table tbody');
+                    tableBody.innerHTML = '';
+                    data.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.itemCode}</td>
+                            <td>${item.categoryName}</td>
+                            <td>${item.subCategory || 'N/A'}</td>
+                            <td>${item.itemDescription || 'N/A'}</td>
+                            <td>${item.unitOfMeasure}</td>
+                            <td>${item.unitPrice.toFixed(2)}</td>
+                            <td>${item.costPrice.toFixed(2)}</td>
+                            <td>${item.hsnCode || 'N/A'}</td>
+                            <td>${item.numberOfItems}</td>
+                            <td>
+                                <button class="action-btn edit" onclick="editItem('${item.itemCode}')">Edit</button>
+                                <button class="action-btn delete" onclick="deleteItem('${item.itemCode}')">Delete</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error fetching items:', error));
+        }
+
+        function fetchDropdownData() {
+            fetch(categoryApiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const categorySelect = document.getElementById('category-name');
+                    categorySelect.innerHTML = '<option value="">Select Category</option>';
+                    data.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.name;
+                        option.textContent = category.name;
+                        categorySelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching categories:', error));
+        }
+        
+        function fetchSubCategories(categoryName) {
+            console.log('Fetching sub-categories for:', categoryName);
+            const subCategorySelect = document.getElementById('sub-category');
+            
+            // Show a loading state
+            subCategorySelect.innerHTML = '<option value="">Loading...</option>';
+            
+            fetch(`${subCategoryApiUrl}/category/${categoryName}`)
+                .then(response => response.json())
+                .then(names => {
+                    console.log('Sub-categories fetched:', names);
+                    subCategorySelect.innerHTML = '<option value="">Select Sub Category</option>';
+                    
+                    if (Array.isArray(names) && names.length > 0) {
+                        names.forEach(name => {
+                            const option = document.createElement('option');
+                            option.value = name;
+                            option.textContent = name;
+                            subCategorySelect.appendChild(option);
+                        });
+                    } else {
+                        console.warn('No sub-categories found for:', categoryName);
+                        subCategorySelect.innerHTML = '<option value="">No sub-categories available</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching sub-categories:', error);
+                    subCategorySelect.innerHTML = '<option value="">Error loading sub-categories</option>';
+                });
+        }
+
+        document.getElementById('category-name').addEventListener('change', function() {
+            const selectedCategory = this.value;
+            console.log('Selected category:', selectedCategory);
+            if (selectedCategory) {
+                fetchSubCategories(selectedCategory);
+            } else {
+                document.getElementById('sub-category').innerHTML = '<option value="">Select Sub Category</option>';
+            }
+        });
+
+        document.getElementById('item-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = getFormData();
+            console.log('Form Data:', formData); // Debug form data
+            const method = document.getElementById('item-code-hidden').value ? 'PUT' : 'POST';
+            const url = method === 'PUT' ? `${apiUrl}/${formData.itemCode}` : apiUrl;
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(() => {
+                fetchItems();
+                document.getElementById('item-form').reset();
+                document.getElementById('item-code-hidden').value = '';
+                document.getElementById('item-code').removeAttribute('readonly');
+            })
+            .catch(error => {
+                console.error('Error saving item:', error);
+                alert('Failed to save item. Please try again.');
+            });
+        });
+
+        function getFormData() {
+            return {
+                itemCode: document.getElementById('item-code').value.trim(),
+                categoryName: document.getElementById('category-name').value.trim(),
+                subCategory: document.getElementById('sub-category').value.trim(),
+                itemDescription: document.getElementById('item-description').value.trim(), // Added Item Description
+                unitOfMeasure: document.getElementById('unit-of-measure').value.trim(),
+                unitPrice: parseFloat(document.getElementById('unit-price').value),
+                costPrice: parseFloat(document.getElementById('cost-price').value),
+                hsnCode: document.getElementById('hsn-code').value.trim(),
+                numberOfItems: document.getElementById('number-of-items').value.trim()
+            };
+        }
+
+        function editItem(itemCode) {
+            fetch(`${apiUrl}/${itemCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('item-code-hidden').value = data.itemCode;
+                    document.getElementById('item-code').value = data.itemCode;
+                    document.getElementById('item-code').setAttribute('readonly', true);
+                    document.getElementById('category-name').value = data.categoryName;
+                    document.getElementById('sub-category').value = data.subCategory || '';
+                    document.getElementById('item-description').value = data.itemDescription || '';
+                    document.getElementById('unit-of-measure').value = data.unitOfMeasure;
+                    document.getElementById('unit-price').value = data.unitPrice.toFixed(2);
+                    document.getElementById('cost-price').value = data.costPrice.toFixed(2);
+                    document.getElementById('hsn-code').value = data.hsnCode || '';
+                    document.getElementById('number-of-items').value = data.numberOfItems;
+                })
+                .catch(error => console.error('Error fetching item:', error));
+        }
+
+        function deleteItem(itemCode) {
+            if (confirm('Are you sure you want to delete this item?')) {
+                fetch(`${apiUrl}/${itemCode}`, {
+                    method: 'DELETE'
+                })
+                .then(() => fetchItems())
+                .catch(error => console.error('Error deleting item:', error));
+            }
+        }
+
+        fetchItems();
+        fetchDropdownData();
+    </script>
+</body>
+</html>

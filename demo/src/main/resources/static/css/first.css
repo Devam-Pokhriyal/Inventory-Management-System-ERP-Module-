@@ -1,0 +1,50 @@
+ 
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .img-container {
+            background: url('inven.jpg') no-repeat center center fixed;
+            background-size: cover;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
+        }
+        
+        .container {
+            display: flex;
+            gap: 20px;
+            background-color:rgb(65 44 44 / 80%);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .icon {
+            background-color: rgb(143 247 111 / 43%);
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 150px;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: aliceblue;
+            transition: transform 0.3s;
+        }
+        
+        .icon h2 {
+            margin: 0;
+            position: relative;
+            
+        }
+        
+        .icon:hover {
+            transform: scale(1.1);
+        }
+        

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+</head>
+<body>
+  <section>
+    <form id="login-form">
+      <h1>Login</h1>
+      <div class="inputbox">
+        <ion-icon name="email-outline"></ion-icon>
+        <input id="email" name="email" type="email" required>
+        <label for="email">Email</label>
+      </div>
+      <div class="inputbox">
+        <ion-icon name="lock-closed-outline"></ion-icon>
+        <input id="password" name="password" type="password" required>
+        <label for="password">Password</label>
+      </div>
+      <div class="register">
+        <p><a href="#">Forget Password?</a></p>
+        <p><a href="/ChangePassword">Change Password</a></p>
+      </div>
+      <button>Log in</button>
+    </form>
+  </section>
+
+  <script>
+    const form = document.getElementById('login-form');
+
+    // Set session email and password (for demo purposes)
+    sessionStorage.setItem('sessionEmail', 'dev@gmail.com');
+    sessionStorage.setItem('sessionPassword', 'pas123');
+
+    // Check if user is already logged in
+    if (sessionStorage.getItem('isLoggedIn') === 'true') {
+      window.location.href = '/dashboard'; // Redirect to the dashboard if already logged in
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      // Get session email and password
+      const sessionEmail = sessionStorage.getItem('sessionEmail');
+      const sessionPassword = sessionStorage.getItem('sessionPassword');
+
+      // Check if credentials match
+      if (email === sessionEmail && password === sessionPassword) {
+        sessionStorage.setItem('isLoggedIn', 'true'); // Set a flag for logged-in status
+        window.location.href = '/dashboard';
+      } else {
+        alert('Invalid credentials');
+      }
+    });
+
+    // Function to handle back navigation
+    function preventBackNavigation() {
+      window.history.pushState(null, null, window.location.href);
+      window.onpopstate = function () {
+        window.history.go(1);
+      };
+    }
+
+    // Call the function when the login page is loaded
+    window.onload = preventBackNavigation;
+  </script>
+</body>
+</html>

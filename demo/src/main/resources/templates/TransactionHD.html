@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transaction Form</title>
+    <link rel="stylesheet" href="/css/THD.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h2>Transaction Form</h2>
+
+      <!-- Transaction Header Form -->
+      <div class="form-group">
+        <label for="transactionType">Transaction Type</label>
+        <input type="text" id="transactionType" readonly />
+      </div>
+      <div class="form-group">
+        <label for="transactionCode">Transaction Code</label>
+        <input type="text" id="transactionCode" readonly />
+      </div>
+
+      <!-- Transaction Header Table -->
+      <div class="grid-container">
+        <h3>Transaction Header</h3>
+        <table>
+          <tr>
+            <th>Transaction Reference Number</th>
+            <th>Transaction Date</th>
+            <th>Vendor Code</th>
+            <th>Reference Number</th>
+
+            <th>Created By</th>
+            <th>Created For</th>
+            <th>Status</th>
+            <th></th>
+            <th></th>
+          </tr>
+          <tr>
+            <td>
+              <input
+                type="text"
+                id="transactionRefNo"
+                placeholder="Enter Transaction Ref No"
+              />
+            </td>
+            <td><input type="date" id="transactionDate" /></td>
+            <td>
+              <select
+                id="vendorCode"
+                name="vendorCode"
+                style="width: 93px"
+                required
+              >
+                <!-- Vendor options will be populated here -->
+              </select>
+            </td>
+            <td>
+              <input
+                type="text"
+                id="referenceNumber"
+                placeholder="Enter Reference Number"
+              />
+            </td>
+
+            <td><input id="createdBy" class="username" readonly /></td>
+            <td>
+              <input
+                type="text"
+                id="createdFor"
+                placeholder="Enter Receiver's Name"
+              />
+            </td>
+
+            <td>
+              <select id="status">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </td>
+            <td>
+              <input
+                type="text"
+                id="headerTransactionType"
+                readonly
+                style="display: none"
+              />
+            </td>
+            <td>
+              <input
+                type="text"
+                id="headerTransactionCode"
+                readonly
+                style="display: none"
+              />
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Add New Transaction Detail Form -->
+      <div class="form-group" style="display: none">
+        <label for="lineNumber">Line Number</label>
+        <input type="number" id="lineNumber" readonly />
+      </div>
+
+      <label for="itemCode">Item Code</label>
+      <select id="itemCode" name="itemCode" style="width: 66%">
+        <!-- Item options will be populated here -->
+      </select>
+      <div class="form-group">
+        <label for="itemDesc">Item Description</label>
+        <input type="text" id="itemDesc" placeholder="Enter Item Description" />
+      </div>
+      <div class="form-group">
+        <label for="fromUom">From UOM</label>
+        <input type="text" id="fromUom" placeholder="Enter From UOM" />
+      </div>
+      <div class="form-group">
+        <label for="toUom">To UOM</label>
+        <input type="text" id="toUom" placeholder="Enter To UOM" />
+      </div>
+      <div class="form-group">
+        <label for="itemQty">Item Quantity</label>
+        <input type="number" id="itemQty" placeholder="Enter Item Quantity" />
+      </div>
+      <div class="form-group">
+        <label for="itemRate">Item Rate</label>
+        <input
+          type="number"
+          step="0.01"
+          id="itemRate"
+          placeholder="Enter Item Rate"
+        />
+      </div>
+      <div class="form-group">
+        <label for="fromLocation">From Location</label>
+        <input
+          type="text"
+          id="fromLocation"
+          placeholder="Enter From Location"
+        />
+      </div>
+      <div class="form-group">
+        <label for="toLocation">To Location</label>
+        <input type="text" id="toLocation" placeholder="Enter To Location" />
+      </div>
+
+      <!-- Transaction Details Table -->
+      <div class="grid-container">
+        <h3>Transaction Details</h3>
+        <table id="transactionDetailsTable">
+          <tr>
+            <th>Transaction Reference Number</th>
+            <th>Line Number</th>
+            <th>Item Code</th>
+            <th>Item Description</th>
+            <th>From UOM</th>
+            <th>To UOM</th>
+            <th>Item Quantity</th>
+            <th>Item Rate</th>
+            <th>From Location</th>
+            <th>To Location</th>
+            <th>Actions</th>
+          </tr>
+        </table>
+      </div>
+      <div class="form-container" style="display: none;">
+        <h2>Stock Entry Form</h2>
+        <form id="stockForm">
+            <div class="form-group">
+                <label for="financialYear">Financial Year</label>
+                <input type="date" id="financialYear" name="financialYear" required>
+            </div>
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" required>
+            </div>
+            <div class="form-group">
+                <label for="itemCode">Item Code</label>
+                <input type="text" id="itemCode" name="itemCode" required>
+            </div>
+            <div class="form-group">
+                <label for="quantity">Quantity</label>
+                <input type="number" id="quantity" name="quantity" required>
+            </div>
+            
+        </form>
+    </div>
+
+      <div class="btn-group">
+        <button id="addDetailButton">Add New Detail</button>
+        <button id="saveButton">Save</button>
+        <button id="fetchDetailsButton">Fetch Transaction Details</button>
+      </div>
+
+      <input type="hidden" id="addedDetails" value="[]" />
+    </div>
+
+    <script>
+      let trnDef = { series: "", nextno: 0 }; // Default initialization
+      let currentTransactionCode = "";
+      let currentNextNo = 0;
+      function generateNextLineNumber() {
+        const trnDetailsTable = document.getElementById(
+          "transactionDetailsTable"
+        );
+        const rowCount = trnDetailsTable.rows.length; // Includes the header row
+
+        if (rowCount > 1) {
+          // Check if there's at least one data row
+          // Loop through the rows in reverse to find the last row with a valid line number
+          for (let i = rowCount - 1; i > 0; i--) {
+            const lastRow = trnDetailsTable.rows[i];
+            const lastLineNumberCell = lastRow.cells[1]; // Assuming the line number is in the second column
+
+            if (lastLineNumberCell && lastLineNumberCell.textContent) {
+              const lastLineNumber = parseInt(
+                lastLineNumberCell.textContent,
+                10
+              );
+
+              if (!isNaN(lastLineNumber)) {
+                const nextLineNumber = lastLineNumber + 1;
+                document.getElementById("lineNumber").value = nextLineNumber;
+                return;
+              }
+            }
+          }
+        }
+
+        // If no valid rows are found, start with line number 1
+        document.getElementById("lineNumber").value = 1;
+      }
+
+      const vendorMasterApiUrl = "http://localhost:8080/api/vendor-master";
+      const vendorItemMappingApiUrl ="http://localhost:8080/api/vendor-item-mapping";
+      document.addEventListener("DOMContentLoaded", async function () {
+        // Call it initially to set the state based on the initial value
+
+        // Initially disable the button
+        addDetailButton.disabled = true;
+
+        // Function to check if all required fields are filled
+        function checkFields() {
+          const itemCode = document.getElementById("itemCode").value;
+          const itemDesc = document.getElementById("itemDesc").value;
+          const fromUom = document.getElementById("fromUom").value;
+          const toUom = document.getElementById("toUom").value;
+          const itemQty = document.getElementById("itemQty").value;
+          const itemRate = document.getElementById("itemRate").value;
+          const fromLocation = document.getElementById("fromLocation").value;
+          const toLocation = document.getElementById("toLocation").value;
+
+          // Check if all required fields are filled
+          if (
+            itemCode &&
+            itemDesc &&
+            fromUom &&
+            toUom &&
+            itemQty &&
+            itemRate &&
+            fromLocation &&
+            toLocation
+          ) {
+            addDetailButton.disabled = false;
+          } else {
+            addDetailButton.disabled = true;
+          }
+        }
+
+        // Attach event listeners to each input field
+        document
+          .getElementById("itemCode")
+          .addEventListener("input", checkFields);
+        document
+          .getElementById("itemDesc")
+          .addEventListener("input", checkFields);
+        document
+          .getElementById("fromUom")
+          .addEventListener("input", checkFields);
+        document.getElementById("toUom").addEventListener("input", checkFields);
+        document
+          .getElementById("itemQty")
+          .addEventListener("input", checkFields);
+        document
+          .getElementById("itemRate")
+          .addEventListener("input", checkFields);
+        document
+          .getElementById("fromLocation")
+          .addEventListener("input", checkFields);
+        document
+          .getElementById("toLocation")
+          .addEventListener("input", checkFields);
+
+        // Add New Detail on Add Button Click
+        addDetailButton.addEventListener("click", function () {
+          addNewDetail();
+          
+          incrementNextNo();
+          saveStock() 
+        });
+        const { transactionType, transactionCode } = getQueryParams();
+
+        if (transactionType) {
+          document.getElementById("transactionType").value = transactionType;
+          document.getElementById("headerTransactionType").value =
+            transactionType;
+        }
+
+        if (transactionCode) {
+          document.getElementById("transactionCode").value = transactionCode;
+          document.getElementById("headerTransactionCode").value =
+            transactionCode;
+          await generateTransactionReferenceNumber(
+            transactionType,
+            transactionCode
+          );
+        }
+
+        await fetchVendors();
+
+        document
+          .getElementById("itemCode")
+          .addEventListener("change", function () {
+            const itemCode = this.value;
+            if (itemCode) {
+              fetchItemDescription(itemCode);
+            }
+          });
+        document
+          .getElementById("fetchDetailsButton")
+          .addEventListener("click", function () {
+            // Fetch transaction details only when the button is clicked
+            fetchTrnDetails();
+          });
+        document
+          .getElementById("vendorCode")
+          .addEventListener("change", async function () {
+            const vendorCode = this.value;
+            if (vendorCode) {
+              await fetchVendorItemMapping(vendorCode);
+            }
+          });
+
+        // Edit and Delete Transaction Detail
+        document
+          .getElementById("transactionDetailsTable")
+          .addEventListener("click", function (e) {
+            if (e.target && e.target.classList.contains("edit-btn")) {
+              editRow(e.target.closest("tr"));
+            } else if (e.target && e.target.classList.contains("delete-btn")) {
+              deleteRow(e.target.closest("tr"));
+            }
+          });
+
+        function getQueryParams() {
+          const urlParams = new URLSearchParams(window.location.search);
+          return {
+            transactionType: urlParams.get("type"),
+            transactionCode: urlParams.get("code"),
+          };
+        }
+
+        async function fetchVendors() {
+          try {
+            const response = await fetch(vendorMasterApiUrl);
+            const vendors = await response.json();
+            populateVendorDropdown(vendors);
+          } catch (error) {
+            console.error("Error fetching vendors:", error);
+          }
+        }
+
+        function populateVendorDropdown(vendors) {
+          const vendorSelect = document.getElementById("vendorCode");
+          vendors.forEach((vendor) => {
+            const option = document.createElement("option");
+            option.value = vendor.code;
+            option.textContent = vendor.name;
+            vendorSelect.appendChild(option);
+          });
+        }
+
+        async function fetchTrnDetails() {
+          try {
+            const response = await fetch("/api/trn-details");
+            const data = await response.json();
+            populateTransactionDetailsTable(data);
+            generateNextLineNumber();
+          } catch (error) {
+            console.error("Error fetching transaction details:", error);
+          }
+        }
+
+        function populateTransactionDetailsTable(data) {
+          const trnDetailsTable = document.getElementById(
+            "transactionDetailsTable"
+          );
+          trnDetailsTable.innerHTML = `
+                <tr>
+                    <th>Transaction Reference Number</th>
+                    <th>Line Number</th>
+                    <th>Item Code</th>
+                    <th>Item Description</th>
+                    <th>From UOM</th>
+                    <th>To UOM</th>
+                    <th>Item Quantity</th>
+                    <th>Item Rate</th>
+                    <th>From Location</th>
+                    <th>To Location</th>
+                    <th>Actions</th>
+                </tr>
+            `;
+          data.forEach((detail) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                    <td>${detail.id.trnRefNo}</td>
+                    <td>${detail.id.lineNumber}</td>
+                    <td>${detail.itemCode}</td>
+                    <td>${detail.itemDesc}</td>
+                    <td>${detail.fromUom}</td>
+                    <td>${detail.toUom}</td>
+                    <td>${detail.itemQty}</td>
+                    <td>${detail.itemRate}</td>
+                    <td>${detail.fromLocation}</td>
+                    <td>${detail.toLocation}</td>
+                    <td>
+                        <button class="edit-btn">Edit</button>
+                        <button class="delete-btn">Delete</button>
+                    </td>
+                `;
+            trnDetailsTable.appendChild(row);
+          });
+        }
+        // Fetch vendor item mapping based on selected vendorCode
+async function fetchVendorItemMapping(vendorCode) {
+    try {
+        const response = await fetch(`/api/vendor-item-mapping/item-codes/${vendorCode}`);
+        const itemCodes = await response.json();
+        populateItemCodes(itemCodes);
+    } catch (error) {
+        console.error("Error fetching vendor item mapping:", error);
+    }
+}
+
+// Populate item codes into the dropdown
+function populateItemCodes(itemCodes) {
+    const itemCodeSelect = document.getElementById("itemCode");
+    itemCodeSelect.innerHTML = ""; // Clear previous options
+    
+    // Create default placeholder option
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Select Item Code";
+    itemCodeSelect.appendChild(defaultOption);
+    
+    // Populate item codes
+    itemCodes.forEach(itemCode => {
+        const option = document.createElement("option");
+        option.value = itemCode;
+        option.textContent = itemCode;
+        itemCodeSelect.appendChild(option);
+    });
+
+    // Attach event listener after populating the dropdown
+    itemCodeSelect.addEventListener('change', handleItemCodeChange);
+}
+
+// Handle item code change and fetch UOM
+function handleItemCodeChange(event) {
+    const itemCode = event.target.value;
+    
+    if (itemCode) {
+        // Fetch the UOM from the backend based on selected itemCode
+        fetch(`/api/item-master/${itemCode}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch UOM');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const fromUomInput = document.getElementById('fromUom'); // Ensure this element exists
+                fromUomInput.value = data.unitOfMeasure || '';  // Set the UOM value or empty if undefined
+            })
+            .catch(error => {
+                alert('Error fetching UOM: ' + error.message);
+                const fromUomInput = document.getElementById('fromUom');
+                fromUomInput.value = ''; // Clear the input if item code is invalid
+            });
+    }
+}
+
+// Example usage: Call the fetchVendorItemMapping function based on vendor selection
+// fetchVendorItemMapping('someVendorCode'); 
+
+        
+        async function generateTransactionReferenceNumber(
+          transactionType,
+          transactionCode
+        ) {
+          try {
+            const response = await fetch(
+              `/api/trn-def/${transactionType}/${transactionCode}`
+            );
+            if (response.ok) {
+              trnDef = await response.json();
+              currentTransactionCode = transactionCode;
+              currentTransactionType = transactionType;
+              currentNextNo = trnDef.nextno || 0; // Ensure default value
+              document.getElementById("lineNumber").value = currentNextNo;
+              document.getElementById("transactionRefNo").value =
+                trnDef.series + currentNextNo;
+            } else {
+              alert("Failed to fetch transaction definition.");
+            }
+          } catch (error) {
+            console.error("Error fetching transaction definition:", error);
+          }
+        }
+
+        async function incrementNextNo() {
+          try {
+            if (!trnDef || !trnDef.series) {
+              throw new Error(
+                "Transaction definition (trnDef) is not available or properly initialized"
+              );
+            }
+
+            // Increment the next number
+            currentNextNo++;
+
+            // Generate the updated transaction reference number
+            const transactionReferenceNumber = `${trnDef.series}${currentNextNo}`;
+
+            // Update the line number and transaction reference number in the UI
+            document.getElementById("lineNumber").value = currentNextNo;
+            document.getElementById("transactionRefNo").value =
+              transactionReferenceNumber;
+
+            // Send a PATCH request to update the next number in the database
+            const response = await fetch(
+              `/api/trn-def/${currentTransactionType}/${currentTransactionCode}`,
+              {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ nextno: currentNextNo }), // Send updated nextno
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to update transaction definition");
+            }
+
+            console.log("Current nextNo:", currentNextNo);
+            console.log(
+              "Transaction Reference Number:",
+              transactionReferenceNumber
+            );
+          } catch (error) {
+            console.error("Error updating transaction definition:", error);
+          }
+        }
+
+        async function saveTrnHeader() {
+          const trnHeader = {
+            trnRefNo: document.getElementById("transactionRefNo").value,
+            trnDate: document.getElementById("transactionDate").value,
+            vendorCode: document.getElementById("vendorCode").value,
+            refNo: document.getElementById("referenceNumber").value,
+            trnType: document.getElementById("headerTransactionType").value,
+            trnCode: document.getElementById("headerTransactionCode").value,
+            createdBy: document.getElementById("createdBy").value,
+            createdFor: document.getElementById("createdFor").value,
+            status: document.getElementById("status").value,
+          };
+
+          try {
+            await fetch("/api/trn-header", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(trnHeader),
+            });
+            console.log("Transaction Header saved successfully.");
+            console.log(trnHeader);
+          } catch (error) {
+            console.error("Error saving transaction header:", error);
+          }
+        }
+
+        function editRow(row) {
+          document.getElementById("transactionRefNo").value =
+            row.cells[0].innerText;
+          document.getElementById("lineNumber").value = row.cells[1].innerText;
+          document.getElementById("itemCode").value = row.cells[2].innerText;
+          document.getElementById("itemDesc").value = row.cells[3].innerText;
+          document.getElementById("fromUom").value = row.cells[4].innerText;
+          document.getElementById("toUom").value = row.cells[5].innerText;
+          document.getElementById("itemQty").value = row.cells[6].innerText;
+          document.getElementById("itemRate").value = row.cells[7].innerText;
+          document.getElementById("fromLocation").value =
+            row.cells[8].innerText;
+          document.getElementById("toLocation").value = row.cells[9].innerText;
+        }
+
+        async function deleteRow(row) {
+          const trnRefNo = row.cells[0].innerText;
+          const lineNumber = row.cells[1].innerText;
+
+          try {
+            await fetch(`/api/trn-details/${trnRefNo}/${lineNumber}`, {
+              method: "DELETE",
+            });
+            console.log("Transaction Detail deleted successfully.");
+            row.remove();
+          } catch (error) {
+            console.error("Error deleting transaction detail:", error);
+          }
+        }
+
+        async function fetchItemDescription(itemCode) {
+          try {
+            // Call the API endpoint to fetch the item details
+            const response = await fetch(`/api/item-master/${itemCode}`);
+
+            // Check if the response is okay
+            if (response.ok) {
+              // Parse the JSON response to extract item data
+              const item = await response.json();
+
+              // Set the item description in the corresponding input field
+              document.getElementById("itemDesc").value = item.itemDescription;
+            } else {
+              console.log("Item not found or error occurred");
+            }
+          } catch (error) {
+            console.error("Error fetching item description:", error);
+          }
+        }
+
+        // ... existing code ...
+
+        // Add New Detail on Add Button Click
+
+        // Save all added details on Save Button Click
+        document
+          .getElementById("saveButton")
+          .addEventListener("click", async function () {
+            await saveTrnHeader();
+            await saveAllDetails();
+            // Display the success message
+
+            // Clear the fetched details on the screen
+            // Clear the transaction header form fields
+            document.getElementById("transactionRefNo").value = "";
+            document.getElementById("transactionDate").value = "";
+            document.getElementById("vendorCode").value = "";
+            document.getElementById("referenceNumber").value = "";
+            document.getElementById("createdBy").value = "";
+            document.getElementById("createdFor").value = "";
+            document.getElementById("status").value = "Active"; // or set to default value
+
+            // Clear the transaction details form fields
+            document.getElementById("lineNumber").value = "";
+            document.getElementById("itemCode").value = "";
+            document.getElementById("itemDesc").value = "";
+            document.getElementById("fromUom").value = "";
+            document.getElementById("toUom").value = "";
+            document.getElementById("itemQty").value = "";
+            document.getElementById("itemRate").value = "";
+            document.getElementById("fromLocation").value = "";
+            document.getElementById("toLocation").value = "";
+
+            // Clear the transaction details table (except the header row)
+            const trnDetailsTable = document.getElementById(
+              "transactionDetailsTable"
+            );
+            while (trnDetailsTable.rows.length > 1) {
+              // Keep the header row
+              trnDetailsTable.deleteRow(1);
+            }
+          });
+      });
+
+      function addNewDetail() {
+        generateNextLineNumber();
+        const trnDetailsTable = document.getElementById(
+          "transactionDetailsTable"
+        );
+        const lineNumber = document.getElementById("lineNumber").value;
+        const itemCode = document.getElementById("itemCode").value;
+        const itemDesc = document.getElementById("itemDesc").value;
+        const fromUom = document.getElementById("fromUom").value;
+        const toUom = document.getElementById("toUom").value;
+        const itemQty = document.getElementById("itemQty").value;
+        const itemRate = document.getElementById("itemRate").value;
+        const fromLocation = document.getElementById("fromLocation").value;
+        const toLocation = document.getElementById("toLocation").value;
+
+        // Create a new row in the transaction details table
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${document.getElementById("transactionRefNo").value}</td>
+            <td>${lineNumber}</td>
+            <td>${itemCode}</td>
+            <td>${itemDesc}</td>
+            <td>${fromUom}</td>
+            <td>${toUom}</td>
+            <td>${itemQty}</td>
+            <td>${itemRate}</td>
+            <td>${fromLocation}</td>
+            <td>${toLocation}</td>
+            <td>
+                <button class="edit-btn">Edit</button>
+                <button class="delete-btn">Delete</button>
+            </td>
+        `;
+        trnDetailsTable.appendChild(row);
+
+        // Store the added detail in a hidden input for later use
+        const addedDetails = JSON.parse(
+          document.getElementById("addedDetails").value
+        );
+        addedDetails.push({
+          id: {
+            trnRefNo: document.getElementById("transactionRefNo").value,
+            lineNumber: parseInt(lineNumber, 10),
+          },
+          itemCode: itemCode,
+          itemDesc: itemDesc,
+          fromUom: fromUom,
+          toUom: toUom,
+          itemQty: parseFloat(itemQty),
+          itemRate: parseFloat(itemRate),
+          fromLocation: fromLocation,
+          toLocation: toLocation,
+        });
+        document.getElementById("addedDetails").value =
+          JSON.stringify(addedDetails);
+
+        // Generate the next line number for the subsequent detail
+      }
+
+      async function saveAllDetails() {
+        const addedDetails = JSON.parse(
+          document.getElementById("addedDetails").value
+        );
+
+        for (const detail of addedDetails) {
+          try {
+            await fetch("/api/trn-details", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(detail),
+            });
+            console.log("Transaction Detail saved successfully.");
+            
+            alert("Transaction Saved Successfully");
+          } catch (error) {
+            console.error("Error saving transaction detail:", error);
+          }
+        }
+
+        // Clear the added details after saving
+        document.getElementById("addedDetails").value = "[]";
+      }
+
+      sessionStorage.setItem("username", "Devam");
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Retrieve the username from session storage
+        const username = sessionStorage.getItem("username") || "Guest";
+
+        // Update the HTML to show the username
+        document.getElementById("createdBy").value = username;
+      });
+      document.addEventListener('DOMContentLoaded', async function () {
+        const transactionTypeInput = document.getElementById('transactionType');
+        const transactionCodeInput=document.getElementById('transactionCode')
+
+        
+        // Function to update 'From Location' based on the transaction type
+        function updateFromLocationField() {
+            const transactionType = transactionTypeInput.value;
+            const transactioCode=transactionCodeInput.value
+       
+            const fromLocationInput = document.getElementById('fromLocation');
+            const fromLocationInput2 = document.getElementById('toLocation');
+            
+            if (transactionType === 'IN') {
+                fromLocationInput.value = "-"; // Set default value
+                fromLocationInput.style.display = 'none'; // Hide the input field
+            } 
+           else if (transactionType === 'OUT') {
+                fromLocationInput2.value = "-"; // Set default value
+                fromLocationInput2.style.display = 'none'; // Hide the input field
+            } 
+            else if (transactionType === 'OUT' && transactioCode===SCRAP) {
+                fromLocationInput.value = "-"; // Set default value
+                fromLocationInput2.style.display = 'none'; // Hide the input field
+            } 
+            else {
+                fromLocationInput.value = ''; // Clear the value for other transaction types
+                fromLocationInput.style.display = 'block'; // Show the input field
+            }
+        }
+        
+        // Call updateFromLocationField on page load
+        updateFromLocationField();
+        
+        // Call updateFromLocationField whenever the transaction type changes
+        transactionTypeInput.addEventListener('change', updateFromLocationField);
+        
+      
+    });
+
+
+    async function saveStock() {
+      const fromLocation = document.getElementById("fromLocation").value;
+      const toLocation = document.getElementById("toLocation").value;
+      const itemCode = document.getElementById("itemCode").value;
+      const itemQty = parseInt(document.getElementById("itemQty").value, 10);
+      let loca = "";
+      if (fromLocation === "-") {
+          loca = toLocation;
+      } else {
+          loca = fromLocation;
+      }
+
+      const stock = {
+          financialYear: document.getElementById("transactionDate").value,
+          location: loca,
+          itemCode: itemCode,
+          quantity: itemQty
+      };
+
+      try {
+          const response = await fetch("/api/stocks", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+              },
+              body: JSON.stringify(stock),
+          });
+
+          if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log('Success:', data);
+
+      } catch (error) {
+          console.error('Error:', error);
+      }
+  }
+
+  
+    </script>
+  </body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Master</title>
+    <link rel="stylesheet" href="/css/CategoryMaster.css">
+    <style>
+        .alert {
+            color: red;
+            font-size: 12px;
+            display: none;
+        }
+        .disabled-input {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    
+    
+    <div class="container">
+        <h1>Category Master </h1>
+
+        <!-- Form to add or update category -->
+        <form id="category-form">
+            <input type="hidden" id="category-id" name="categoryId">
+            <label for="category-name"> Name:</label>
+            <input type="text" id="category-name" name="categoryName" required>
+            <span id="name-alert" class="alert">Name cannot be edited</span>
+            <label for="category-description">Description:</label>
+            <input type="text" id="category-description" name="categoryDescription" required>
+            <button type="submit">Save</button>
+        </form>
+
+        <!-- Table to display categories -->
+        <table id="category-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Table rows will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    <script src="script.js"></script>
+</body>
+<script>
+    const apiUrl = 'http://localhost:8080/api/category-master';
+
+    // Fetch all categories and display them
+    function fetchCategories() {
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.querySelector('#category-table tbody');
+                tableBody.innerHTML = ''; // Clear existing rows
+                data.forEach(category => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${category.name}</td>
+                        <td>${category.description}</td>
+                        <td>
+                            <button class="action-btn" onclick="editCategory('${category.name}')">Edit</button>
+                            <button class="action-btn" onclick="deleteCategory('${category.name}')">Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => console.error('Error fetching categories:', error));
+    }
+
+    // Add or update category
+    document.getElementById('category-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const id = document.getElementById('category-id').value;
+        const name = document.getElementById('category-name').value;
+        const description = document.getElementById('category-description').value;
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${apiUrl}/${id}` : apiUrl;
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, description })
+        })
+        .then(response => response.json())
+        .then(() => {
+            fetchCategories(); // Refresh the table
+            document.getElementById('category-form').reset(); // Reset form
+            document.getElementById('category-id').value = ''; // Clear hidden field
+            document.getElementById('category-name').removeAttribute('disabled'); // Enable name input
+            document.getElementById('name-alert').style.display = 'none'; // Hide alert
+            document.getElementById('category-name').classList.remove('disabled-input');
+        })
+        .catch(error => console.error('Error saving category:', error));
+    });
+
+    // Populate form for editing
+    function editCategory(name) {
+        fetch(`${apiUrl}/${name}`)
+            .then(response => response.json())
+            .then(category => {
+                document.getElementById('category-id').value = category.name;
+                document.getElementById('category-name').value = category.name;
+                document.getElementById('category-description').value = category.description;
+                
+                // Disable the name input and show alert
+                document.getElementById('category-name').setAttribute('disabled', true);
+                document.getElementById('name-alert').style.display = 'inline';
+                document.getElementById('category-name').classList.add('disabled-input');
+            })
+            .catch(error => console.error('Error fetching category for editing:', error));
+    }
+
+    // Delete category
+    function deleteCategory(name) {
+        fetch(`${apiUrl}/${name}`, {
+            method: 'DELETE'
+        })
+        .then(() => fetchCategories()) // Refresh the table
+        .catch(error => console.error('Error deleting category:', error));
+    }
+
+    // Initial fetch
+    fetchCategories();
+
+</script>
+</html>
